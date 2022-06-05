@@ -1,7 +1,5 @@
-from email import message
-from multiprocessing.connection import answer_challenge
 from time import time
-from utils import keyboard, recepient_info
+from utils import recepient_info, send_message, get_message
 
 recepients = {}
 
@@ -13,37 +11,68 @@ def alert(update, context):
     recepients[username] = recepient_info(update, int(duration))
 
     message = f"Запущен таймер на {duration} минут"
-    update.message.reply_text(message, reply_markup=keyboard())
+    send_message(update, message)
 
 
 def callback_minute(context):
     print(recepients)
-    for username, recepient in recepients.items():
+    recepients_copy = recepients.copy()
+    for username, recepient in recepients_copy.items():
         update = recepient['update']
         duration = recepient['duration']
         start_time = recepient['start_time']
+        sprint = recepient['sprint']
 
         minutes_since_start = (time() - start_time)/60
 
         if minutes_since_start > duration:
-            message = f"{duration} минут истекли"
+            message = get_message(sprint, duration)
             recepients.pop(username)
-            update.message.reply_text(message, reply_markup=keyboard())
+            send_message(update, message)
             continue
 
-        if duration > 25:
-            message = 'BEEP'
-            update.message.reply_text(message, reply_markup=keyboard())
-            continue
+        if sprint:
+            if 'pomodoro_anounced' not in recepient:
+                recepient['pomodoro_anounced'] = False
+            if 'rest_anounced' not in recepient:
+                recepient['rest_anounced'] = False
+
+            pomodoro_duration = (time() - sprint)/60
+
+            if pomodoro_duration >= 40 and not recepient['pomodoro_anounced']:
+                recepients[username]['sprint'] = time()
+                message = "Pomodoro 30 minutes started."
+                recepient['pomodoro_anounced'] = True
+                recepient['rest_anounced'] = False
+                send_message(update, message)
+                continue
+
+            if pomodoro_duration >= 30 and not recepient['rest_anounced']:
+                message = "Pomodoro is done, please have 10 minutes rest now."
+                recepient['rest_anounced'] = True
+                recepient['pomodoro_anounced'] = False
+                send_message(update, message)
+                continue
 
 
 def start_timer(update, context):
     username = update.message.from_user['username']
     recepients[username] = recepient_info(update, float('inf'))
 
-    update.message.reply_text(
-        "Напомню о себе через минуту!", reply_markup=keyboard()
-    )
+    message = "Напомню о себе через минуту!"
+    send_message(update, message)
+
+
+def start_sprint(update, context):
+    username = update.message.from_user['username']
+    duration = 150
+
+    recepients[username] = recepient_info(update, duration, time())
+
+    message = ("Sprint started. It will last for 2 hours and 30 minutes "
+               "or until you stop it. Pomodoro 30 minutes started.")
+
+    send_message(update, message)
 
 
 def stop_timer(update, context):
@@ -55,4 +84,4 @@ def stop_timer(update, context):
     else:
         message = 'У вас не запланировано никаких напоминаний.'
 
-    update.message.reply_text(message, reply_markup=keyboard())
+    send_message(update, message)

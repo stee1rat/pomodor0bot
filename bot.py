@@ -1,7 +1,12 @@
 import logging
 import settings
 
-from handlers import callback_minute, start_timer, stop_timer, alert
+from handlers import alert
+from handlers import callback_minute
+from handlers import start_timer
+from handlers import start_sprint
+from handlers import stop_timer
+
 from telegram.ext import CommandHandler
 from telegram.ext import Updater
 
@@ -21,6 +26,9 @@ def main():
     updater.dispatcher.add_handler(CommandHandler('5', alert))
     updater.dispatcher.add_handler(CommandHandler('15', alert))
     updater.dispatcher.add_handler(CommandHandler('25', alert))
+    updater.dispatcher.add_handler(
+        CommandHandler('start_sprint', start_sprint)
+    )
 
     updater.start_polling()
     updater.idle()
