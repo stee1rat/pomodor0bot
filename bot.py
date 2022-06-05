@@ -5,9 +5,10 @@ from handlers import callback_minute, start_timer, stop_timer, alert
 from telegram.ext import CommandHandler
 from telegram.ext import Updater
 
-logging.basicConfig(filename='bot.log', 
-                    level=logging.INFO, 
+logging.basicConfig(filename='bot.log',
+                    level=logging.INFO,
                     format=settings.LOGGING_FORMAT)
+
 
 def main():
     updater = Updater(settings.API_KEY, use_context=True)

@@ -1,45 +1,50 @@
+from email import message
+from multiprocessing.connection import answer_challenge
 from time import time
-from utils import keyboard
+from utils import keyboard, recepient_info
 
 recepients = {}
 
+
 def alert(update, context):
-    duration = int(update.message['text'][1:])
+    duration = update.message['text'][1:]
     username = update.message.from_user['username']
 
-    recepients[username] = { 
-        "update": update, "duration": duration, "start_time": time()
-    }
+    recepients[username] = recepient_info(update, int(duration))
 
-    update.message.reply_text(
-        f"Запущен таймер на {duration} минут", reply_markup=keyboard()
-    )
+    message = f"Запущен таймер на {duration} минут"
+    update.message.reply_text(message, reply_markup=keyboard())
+
 
 def callback_minute(context):
     print(recepients)
-    for recepient in recepients:
-        update = recepients[recepient]['update']
-        duration = recepients[recepient]['duration']
-        start_time = recepients[recepient]['start_time']
+    for username, recepient in recepients.items():
+        update = recepient['update']
+        duration = recepient['duration']
+        start_time = recepient['start_time']
 
-        if (time() - start_time)/60 > duration:
-            update.message.reply_text(
-                f"{duration} минут истекли", reply_markup=keyboard())
-            recepients.pop(recepient)
+        minutes_since_start = (time() - start_time)/60
+
+        if minutes_since_start > duration:
+            message = f"{duration} минут истекли"
+            recepients.pop(username)
+            update.message.reply_text(message, reply_markup=keyboard())
+            continue
 
         if duration > 25:
-            update.message.reply_text('BEEP', reply_markup=keyboard())
+            message = 'BEEP'
+            update.message.reply_text(message, reply_markup=keyboard())
+            continue
+
 
 def start_timer(update, context):
     username = update.message.from_user['username']
-
-    recepients[username] = { 
-        "update": update, "duration": float('inf'), "start_time": time() 
-    }
+    recepients[username] = recepient_info(update, float('inf'))
 
     update.message.reply_text(
         "Напомню о себе через минуту!", reply_markup=keyboard()
     )
+
 
 def stop_timer(update, context):
     username = update.message.from_user['username']
