@@ -1,60 +1,4 @@
-from time import time
-from utils import recepient_info, send_message, get_message
-from pprint import pprint
-
-recepients = {}
-statistics = {}
-
-
-def alert(update, context):
-    duration = update.message['text'][1:].replace('@pomodor0bot', '')
-    chat_id = update.message.chat_id
-
-    recepients[chat_id] = recepient_info(update, int(duration))
-
-    message = f"Запущен таймер на {duration} минут"
-    send_message(update, message)
-
-
-def callback_minute(context):
-    pprint(recepients)
-    recepients_copy = recepients.copy()
-    for chat_id, recepient in recepients_copy.items():
-        update = recepient['update']
-        duration = recepient['duration']
-        start_time = recepient['start_time']
-        sprint = recepient['sprint']
-
-        minutes_since_start = (time() - start_time)/60
-
-        if minutes_since_start > duration:
-            message = get_message(sprint, duration)
-            recepients.pop(chat_id)
-            send_message(update, message)
-            continue
-
-        if sprint:
-            if 'pomodoro_anounced' not in recepient:
-                recepient['pomodoro_anounced'] = False
-            if 'rest_anounced' not in recepient:
-                recepient['rest_anounced'] = False
-
-            pomodoro_duration = (time() - sprint)/60
-
-            if pomodoro_duration >= 40 and not recepient['pomodoro_anounced']:
-                recepients[chat_id]['sprint'] = time()
-                message = "Pomodoro 30 minutes started."
-                recepient['pomodoro_anounced'] = True
-                recepient['rest_anounced'] = False
-                send_message(update, message)
-                continue
-
-            if pomodoro_duration >= 30 and not recepient['rest_anounced']:
-                message = "Pomodoro is done, please have 10 minutes rest now."
-                recepient['rest_anounced'] = True
-                recepient['pomodoro_anounced'] = False
-                send_message(update, message)
-                continue
+from utils import send_message, remove_job_if_exists, get_message
 
 
 def help(update, context):
@@ -66,25 +10,64 @@ def help(update, context):
     )
 
 
-def start_sprint(update, context):
-    chat_id = update.message.chat_id
-    duration = 150
+def report(context):
+    job = context.job.context
 
-    recepients[chat_id] = recepient_info(update, duration, time())
+    if job['sprint'] and job['pomodoros'] < 4:
+        set_timer(
+            job['update'],
+            job['context'],
+            job['sprint'],
+            not job['rest'],
+            job['pomodoros'] + 1 if job['rest'] else job['pomodoros']
+        )
+        return
 
-    message = ("Sprint started. It will last for 2 hours and 30 minutes "
-               "or until you stop it. Pomodoro 30 minutes started.")
-
-    send_message(update, message)
-
-
-def stop_timer(update, context):
-    chat_id = update.message.chat_id
-
-    if chat_id in recepients:
-        recepients.pop(chat_id)
-        message = 'Напоминания отключены.'
+    if job['sprint']:
+        text = "Congratulations, your sprint is done! How do you feel?"
     else:
-        message = 'У вас не запланировано никаких напоминаний.'
+        text = f"Pomodoro {job['due']} minutes is over! How's it going?"
 
-    send_message(update, message)
+    context.bot.send_message(job['chat_id'], text=text)
+
+
+def set_timer(update, context, sprint=False, rest=False, pomodoros=0):
+    chat_id = update.effective_message.chat_id
+
+    if sprint:
+        due = 30 if not rest else 10
+    else:
+        due = int(update.message['text'][1:].replace('@pomodor0bot', ''))
+
+    job_removed = remove_job_if_exists(str(chat_id), context)
+
+    data = {
+        'pomodoros': pomodoros,
+        'chat_id': chat_id,
+        'context': context,
+        'update': update,
+        'sprint': sprint,
+        'rest': rest,
+        'due': due
+    }
+
+    context.job_queue.run_once(
+        report, due * 60, name=str(chat_id), context=data
+    )
+
+    text = get_message(rest, pomodoros, sprint, job_removed, due)
+    send_message(update, text)
+
+
+def start_sprint(update, context):
+    set_timer(update, context, sprint=True)
+
+
+def unset_timer(update, context):
+    chat_id = update.message.chat_id
+    job_removed = remove_job_if_exists(str(chat_id), context)
+    if job_removed:
+        text = "Pomodoro successfully cancelled!"
+    else:
+        test = "You have no active pomodoros."
+    send_message(update, text)

@@ -1,11 +1,10 @@
 import logging
 import settings
 
-from handlers import alert
-from handlers import callback_minute
+from handlers import set_timer
 from handlers import help
 from handlers import start_sprint
-from handlers import stop_timer
+from handlers import unset_timer
 
 from telegram.ext import CommandHandler
 from telegram.ext import Filters
@@ -21,10 +20,7 @@ logging.basicConfig(filename='bot.log',
 def main():
     updater = Updater(settings.API_KEY, use_context=True)
 
-    job = updater.dispatcher.job_queue
-    job.run_repeating(callback_minute, interval=60, first=10)
-
-    updater.dispatcher.add_handler(CommandHandler('stop', stop_timer))
+    updater.dispatcher.add_handler(CommandHandler('stop', unset_timer))
     updater.dispatcher.add_handler(CommandHandler('help', help))
 
     updater.dispatcher.add_handler(
@@ -34,7 +30,7 @@ def main():
     updater.dispatcher.add_handler(
         MessageHandler(
             Filters.regex(fr"^/(\d+)(@{updater.bot.username}){{0,1}}$"),
-            alert
+            set_timer
         )
     )
 
