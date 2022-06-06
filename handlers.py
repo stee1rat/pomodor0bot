@@ -57,6 +57,15 @@ def callback_minute(context):
                 continue
 
 
+def help(update, context):
+    send_message(
+        update,
+        ("Hi, I'm your Pomodoro Timer. Let's work? Send me minutes to set "
+         "the timer to or press button below. \n\nIn a group please send "
+         "commands like this: /25@pomodoro_timer_bot.")
+    )
+
+
 def start_sprint(update, context):
     chat_id = update.message.chat_id
     duration = 150
