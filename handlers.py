@@ -5,10 +5,10 @@ recepients = {}
 
 
 def alert(update, context):
-    duration = update.message['text'][1:]
-    username = update.message.from_user['username']
+    duration = update.message['text'][1:].replace('@pomodor0bot', '')
+    chat_id = update.message.chat_id
 
-    recepients[username] = recepient_info(update, int(duration))
+    recepients[chat_id] = recepient_info(update, int(duration))
 
     message = f"Запущен таймер на {duration} минут"
     send_message(update, message)
@@ -17,7 +17,7 @@ def alert(update, context):
 def callback_minute(context):
     print(recepients)
     recepients_copy = recepients.copy()
-    for username, recepient in recepients_copy.items():
+    for chat_id, recepient in recepients_copy.items():
         update = recepient['update']
         duration = recepient['duration']
         start_time = recepient['start_time']
@@ -27,7 +27,7 @@ def callback_minute(context):
 
         if minutes_since_start > duration:
             message = get_message(sprint, duration)
-            recepients.pop(username)
+            recepients.pop(chat_id)
             send_message(update, message)
             continue
 
@@ -40,7 +40,7 @@ def callback_minute(context):
             pomodoro_duration = (time() - sprint)/60
 
             if pomodoro_duration >= 40 and not recepient['pomodoro_anounced']:
-                recepients[username]['sprint'] = time()
+                recepients[chat_id]['sprint'] = time()
                 message = "Pomodoro 30 minutes started."
                 recepient['pomodoro_anounced'] = True
                 recepient['rest_anounced'] = False
@@ -56,18 +56,17 @@ def callback_minute(context):
 
 
 def start_timer(update, context):
-    username = update.message.from_user['username']
-    recepients[username] = recepient_info(update, float('inf'))
-
+    chat_id = update.message.chat_id
+    recepients[chat_id] = recepient_info(update, float('inf'))
     message = "Напомню о себе через минуту!"
     send_message(update, message)
 
 
 def start_sprint(update, context):
-    username = update.message.from_user['username']
+    chat_id = update.message.chat_id
     duration = 150
 
-    recepients[username] = recepient_info(update, duration, time())
+    recepients[chat_id] = recepient_info(update, duration, time())
 
     message = ("Sprint started. It will last for 2 hours and 30 minutes "
                "or until you stop it. Pomodoro 30 minutes started.")
@@ -76,10 +75,10 @@ def start_sprint(update, context):
 
 
 def stop_timer(update, context):
-    username = update.message.from_user['username']
+    chat_id = update.message.chat_id
 
-    if username in recepients:
-        recepients.pop(username)
+    if chat_id in recepients:
+        recepients.pop(chat_id)
         message = 'Напоминания отключены.'
     else:
         message = 'У вас не запланировано никаких напоминаний.'

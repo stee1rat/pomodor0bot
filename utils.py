@@ -20,11 +20,14 @@ def keyboard():
 def recepient_info(update, duration, sprint=False):
     return {
         "update": update,
-        "duration": int(duration),
+        "duration": duration,
         "start_time": time(),
         "sprint": sprint
     }
 
 
 def send_message(update, message):
-    update.message.reply_text(message, reply_markup=keyboard())
+    if update.message.chat_id > 0:
+        update.message.reply_text(message, reply_markup=keyboard())
+    else:
+        update.message.reply_text(message, quote=False)
