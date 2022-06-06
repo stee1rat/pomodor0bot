@@ -8,7 +8,10 @@ from handlers import start_sprint
 from handlers import stop_timer
 
 from telegram.ext import CommandHandler
+from telegram.ext import Filters
+from telegram.ext import MessageHandler
 from telegram.ext import Updater
+
 
 logging.basicConfig(filename='bot.log',
                     level=logging.INFO,
@@ -23,11 +26,16 @@ def main():
 
     updater.dispatcher.add_handler(CommandHandler('start', start_timer))
     updater.dispatcher.add_handler(CommandHandler('stop', stop_timer))
-    updater.dispatcher.add_handler(CommandHandler('5', alert))
-    updater.dispatcher.add_handler(CommandHandler('15', alert))
-    updater.dispatcher.add_handler(CommandHandler('25', alert))
+
     updater.dispatcher.add_handler(
         CommandHandler('start_sprint', start_sprint)
+    )
+
+    updater.dispatcher.add_handler(
+        MessageHandler(
+            Filters.regex(fr"^/(\d+)(@{updater.bot.username}){{0,1}}$"),
+            alert
+        )
     )
 
     updater.start_polling()

@@ -1,7 +1,9 @@
 from time import time
 from utils import recepient_info, send_message, get_message
+from pprint import pprint
 
 recepients = {}
+statistics = {}
 
 
 def alert(update, context):
@@ -15,7 +17,7 @@ def alert(update, context):
 
 
 def callback_minute(context):
-    print(recepients)
+    pprint(recepients)
     recepients_copy = recepients.copy()
     for chat_id, recepient in recepients_copy.items():
         update = recepient['update']
