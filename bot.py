@@ -3,7 +3,6 @@ import settings
 
 from handlers import alert
 from handlers import callback_minute
-from handlers import start_timer
 from handlers import start_sprint
 from handlers import stop_timer
 
@@ -24,7 +23,6 @@ def main():
     job = updater.dispatcher.job_queue
     job.run_repeating(callback_minute, interval=60, first=10)
 
-    updater.dispatcher.add_handler(CommandHandler('start', start_timer))
     updater.dispatcher.add_handler(CommandHandler('stop', stop_timer))
 
     updater.dispatcher.add_handler(

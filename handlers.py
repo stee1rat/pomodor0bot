@@ -57,13 +57,6 @@ def callback_minute(context):
                 continue
 
 
-def start_timer(update, context):
-    chat_id = update.message.chat_id
-    recepients[chat_id] = recepient_info(update, float('inf'))
-    message = "Напомню о себе через минуту!"
-    send_message(update, message)
-
-
 def start_sprint(update, context):
     chat_id = update.message.chat_id
     duration = 150
