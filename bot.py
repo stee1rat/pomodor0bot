@@ -3,6 +3,7 @@ import settings
 
 from handlers import set_timer
 from handlers import help
+from handlers import repeat
 from handlers import start_sprint
 from handlers import unset_timer
 
@@ -22,6 +23,7 @@ def main():
 
     updater.dispatcher.add_handler(CommandHandler('stop', unset_timer))
     updater.dispatcher.add_handler(CommandHandler('help', help))
+    updater.dispatcher.add_handler(CommandHandler('repeat', repeat))
 
     updater.dispatcher.add_handler(
         CommandHandler('start_sprint', start_sprint)

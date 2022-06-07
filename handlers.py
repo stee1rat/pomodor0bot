@@ -10,6 +10,18 @@ def help(update, context):
     )
 
 
+def repeat(update, context):
+    if 'repeat' in context.chat_data:
+        previous = context.chat_data['repeat']
+        set_timer(
+            previous['update'],
+            previous['context'],
+            previous['sprint']
+        )
+    else:
+        send_message(update, "You have nothing to repeat")
+
+
 def report(context):
     job = context.job.context
 
@@ -51,6 +63,8 @@ def set_timer(update, context, sprint=False, rest=False, pomodoros=0):
         'due': due
     }
 
+    context.chat_data['repeat'] = data
+
     context.job_queue.run_once(
         report, due * 60, name=str(chat_id), context=data
     )
@@ -69,5 +83,5 @@ def unset_timer(update, context):
     if job_removed:
         text = "Pomodoro successfully cancelled!"
     else:
-        test = "You have no active pomodoros."
+        text = "You have no active pomodoros."
     send_message(update, text)

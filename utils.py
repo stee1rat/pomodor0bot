@@ -10,8 +10,7 @@ def get_message(rest, pomodoros, sprint, job_removed, due):
                     f" or until you stop it. ")
         text += f"Pomodoro {due} minutes started."
     else:
-        text = (f"Pomodoro is done, "
-                f"please have {due} minutes rest now..")
+        text = (f"Pomodoro is done, please have {due} minutes rest now..")
 
     if job_removed:
         text += " Previous timer was removed."
