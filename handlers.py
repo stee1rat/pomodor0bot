@@ -1,4 +1,7 @@
-from utils import send_message, remove_job_if_exists, get_message
+from utils import get_message
+from utils import remove_job_if_exists
+from utils import update_stats
+from utils import send_message
 
 
 def help(update, context):
@@ -25,13 +28,16 @@ def repeat(update, context):
 def report(context):
     job = context.job.context
 
+    if job['rest'] or not job['sprint']:
+        update_stats(job['context'].chat_data, job['due'])
+
     if job['sprint'] and job['pomodoros'] < 4:
         set_timer(
             job['update'],
             job['context'],
             job['sprint'],
-            not job['rest'],
-            job['pomodoros'] + 1 if job['rest'] else job['pomodoros']
+            job['rest'],
+            job['pomodoros']
         )
         return
 
@@ -41,6 +47,17 @@ def report(context):
         text = f"Pomodoro {job['due']} minutes is over! How's it going?"
 
     context.bot.send_message(job['chat_id'], text=text)
+
+
+def report_stats(update, context):
+    if 'stats' not in context.chat_data:
+        text = ("You have no completed pomodoros today. "
+                "But don't be upset! There is still time to start one.")
+    else:
+        p = context.chat_data['stats']['pomodoros']
+        m = context.chat_data['stats']['minutes']
+        text = f"You did {p} pomodoros ({m} minutes) today. Good job!"
+    send_message(update, text)
 
 
 def set_timer(update, context, sprint=False, rest=False, pomodoros=0):
@@ -54,16 +71,17 @@ def set_timer(update, context, sprint=False, rest=False, pomodoros=0):
     job_removed = remove_job_if_exists(str(chat_id), context)
 
     data = {
-        'pomodoros': pomodoros,
+        'pomodoros': pomodoros + 1 if not rest else pomodoros,
         'chat_id': chat_id,
         'context': context,
         'update': update,
         'sprint': sprint,
-        'rest': rest,
+        'rest': not rest,
         'due': due
     }
 
-    context.chat_data['repeat'] = data
+    if pomodoros == 0:
+        context.chat_data['repeat'] = data
 
     context.job_queue.run_once(
         report, due * 60, name=str(chat_id), context=data

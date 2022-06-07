@@ -1,5 +1,4 @@
 from telegram import ReplyKeyboardMarkup
-from time import time
 
 
 def get_message(rest, pomodoros, sprint, job_removed, due):
@@ -40,3 +39,13 @@ def remove_job_if_exists(name, context):
     for job in current_jobs:
         job.schedule_removal()
     return True
+
+
+def update_stats(chat_data, minutes):
+    if 'stats' not in chat_data:
+        chat_data['stats'] = {
+            'pomodoros': 0,
+            'minutes': 0
+        }
+    chat_data['stats']['pomodoros'] += 1
+    chat_data['stats']['minutes'] += minutes

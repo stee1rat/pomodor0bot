@@ -4,6 +4,7 @@ import settings
 from handlers import set_timer
 from handlers import help
 from handlers import repeat
+from handlers import report_stats
 from handlers import start_sprint
 from handlers import unset_timer
 
@@ -21,8 +22,9 @@ logging.basicConfig(filename='bot.log',
 def main():
     updater = Updater(settings.API_KEY, use_context=True)
 
-    updater.dispatcher.add_handler(CommandHandler('stop', unset_timer))
     updater.dispatcher.add_handler(CommandHandler('help', help))
+    updater.dispatcher.add_handler(CommandHandler('stats', report_stats))
+    updater.dispatcher.add_handler(CommandHandler('stop', unset_timer))
     updater.dispatcher.add_handler(CommandHandler('repeat', repeat))
 
     updater.dispatcher.add_handler(
