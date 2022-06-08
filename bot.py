@@ -1,3 +1,4 @@
+from email.quoprimime import quote
 import logging
 import settings
 
@@ -15,8 +16,9 @@ from telegram.ext import Updater
 from telegram.ext import ConversationHandler
 
 from telegram  import ReplyKeyboardMarkup
+from telegram import ReplyKeyboardRemove
 
-from utils import keyboard
+from utils import keyboard, send_message
 from utils import get_sprint_settings
 
 CHOOSING, TYPING_REPLY, TYPING_CHOICE = range(3)
@@ -81,11 +83,7 @@ def done(update, context):
     if "choice" in chat_data:
         del chat_data["choice"]
 
-    update.message.reply_text(
-        f"Settings saved!",
-        reply_markup=keyboard(), 
-        quote=False
-    )
+    send_message(update, "Settings saved!")
 
     return ConversationHandler.END
 
@@ -104,8 +102,9 @@ def received_information(update, context):
 
     text = f"You entered {text} for {category.lower()}" 
     text += get_settings_message(context)
-    update.message.reply_text(text, reply_markup=settings_keyboard())
 
+    update.message.reply_text(text, reply_markup=settings_keyboard())
+    
     return CHOOSING
 
 

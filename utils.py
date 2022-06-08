@@ -1,4 +1,5 @@
 from telegram import ReplyKeyboardMarkup
+from telegram import ReplyKeyboardRemove
 from datetime import date
 
 
@@ -40,7 +41,9 @@ def send_message(update, message):
     if update.message.chat_id > 0:
         update.message.reply_text(message, reply_markup=keyboard())
     else:
-        update.message.reply_text(message, quote=False)
+        update.message.reply_text(
+            message, reply_markup=ReplyKeyboardRemove(), quote=False
+        )
 
 
 def remove_job_if_exists(name, context):
