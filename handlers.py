@@ -1,11 +1,21 @@
+import constants
+
 from utils import get_message
 from utils import remove_job_if_exists
 from utils import update_stats
 from utils import send_message
+from utils import settings_keyboard
 from utils import get_sprint_settings
 
-POMODORO_DURATION, REST_DURATION, POMODOROS = (
-    "Pomodoro duration", "Rest duration", "Number of pomodoros in a sprint")
+from telegram.ext import ConversationHandler
+
+
+CHOOSING = constants.CHOOSING
+TYPING_REPLY = constants.TYPING_REPLY
+POMODORO_DURATION = constants.POMODORO_DURATION
+REST_DURATION = constants.REST_DURATION
+POMODOROS = constants.POMODOROS
+
 
 def help(update, context):
     send_message(
@@ -98,6 +108,17 @@ def set_timer(update, context, sprint=False, rest=False, pomodoros=0):
     send_message(update, text)
 
 
+def settings_start(update, context):
+    text = get_settings_message(context)
+
+    update.message.reply_text(
+        text, 
+        reply_markup=settings_keyboard()
+    )
+
+    return CHOOSING
+
+
 def start_sprint(update, context):
     set_timer(update, context, sprint=True)
 
@@ -110,3 +131,52 @@ def unset_timer(update, context):
     else:
         text = "You have no active pomodoros."
     send_message(update, text)
+
+
+def get_settings_message(context):
+    chat_settings = get_sprint_settings(context.chat_data)['settings']
+
+    return (f"Your current settings are: \n\n"
+            f"{POMODORO_DURATION}: {chat_settings[POMODORO_DURATION]}\n"
+            f"{REST_DURATION}: {chat_settings[REST_DURATION]}\n"
+            f"{POMODOROS}: {chat_settings[POMODOROS]}\n\n"
+            f"What do you want to change?")
+    
+
+def regular_choice(update, context):
+    text = update.message.text
+    context.chat_data["choice"] = text
+    update.message.reply_text(
+        f"Please enter {text.lower()}:"
+    )
+    return TYPING_REPLY
+
+
+def done(update, context):
+    chat_data = context.chat_data
+    if "choice" in chat_data:
+        del chat_data["choice"]
+
+    send_message(update, "Settings saved!")
+
+    return ConversationHandler.END
+
+
+def received_information(update, context):
+    chat_data = context.chat_data
+    text = update.message.text
+    category = chat_data["choice"]
+    chat_data[category] = text
+
+    chat_settings = context.chat_data['settings']
+    chat_settings[category] = int(text)
+
+    del chat_data["choice"]
+
+    text = f"You entered {text} for {category.lower()}" 
+    text += get_settings_message(context)
+
+    update.message.reply_text(text, reply_markup=settings_keyboard())
+    
+    return CHOOSING
+

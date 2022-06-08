@@ -1,10 +1,15 @@
+import constants
+
 from telegram import ReplyKeyboardMarkup
 from telegram import ReplyKeyboardRemove
 from datetime import date
 
 
-POMODORO_DURATION, REST_DURATION, POMODOROS = (
-    "Pomodoro duration", "Rest duration", "Number of pomodoros in a sprint")
+CHOOSING = constants.CHOOSING
+TYPING_REPLY = constants.TYPING_REPLY
+POMODORO_DURATION = constants.POMODORO_DURATION
+REST_DURATION = constants.REST_DURATION
+POMODOROS = constants.POMODOROS
 
 
 def get_message(context, rest, pomodoros, sprint, job_removed, due):
@@ -13,8 +18,10 @@ def get_message(context, rest, pomodoros, sprint, job_removed, due):
         if sprint and pomodoros == 0:
             chat_data = get_sprint_settings(context.chat_data)
             s = chat_data['settings']
-            total_minutes = s[POMODORO_DURATION]*s[POMODOROS]
-            total_minutes += s[REST_DURATION]*(s[POMODOROS] - 1)
+            d = s[POMODORO_DURATION]
+            p = s[POMODOROS]
+            r = s[REST_DURATION]
+            total_minutes = d * p + r * (p - 1)
             hours = total_minutes // 60
             minutes = total_minutes % 60
             text = (f"Sprint started. It will last for {hours} hours and "
@@ -44,6 +51,17 @@ def send_message(update, message):
         update.message.reply_text(
             message, reply_markup=ReplyKeyboardRemove(), quote=False
         )
+
+
+def settings_keyboard():
+    return ReplyKeyboardMarkup(
+        [[POMODORO_DURATION],
+         [REST_DURATION],
+         [POMODOROS],
+         ["Done"]], 
+        one_time_keyboard=True, 
+        resize_keyboard=True
+    )
 
 
 def remove_job_if_exists(name, context):
