@@ -1,11 +1,12 @@
 import constants
 
 from utils import get_message
+from utils import get_settings_message
 from utils import remove_job_if_exists
 from utils import update_stats
 from utils import send_message
 from utils import settings_keyboard
-from utils import get_sprint_settings
+from utils import check_sprint_settings
 
 from telegram.ext import ConversationHandler
 
@@ -17,6 +18,24 @@ REST_DURATION = constants.REST_DURATION
 POMODOROS = constants.POMODOROS
 
 
+def choice(update, context):
+    text = update.message.text
+
+    context.chat_data["choice"] = text
+    update.message.reply_text(f"Please enter {text.lower()}:")
+
+    return TYPING_REPLY
+
+
+def done(update, context):
+    if "choice" in context.chat_data:
+        del context.chat_data["choice"]
+
+    send_message(update, "Settings saved!")
+
+    return ConversationHandler.END
+
+
 def help(update, context):
     send_message(
         update,
@@ -24,6 +43,27 @@ def help(update, context):
          "the timer to or press button below. \n\nIn a group please send "
          "commands like this: /25@pomodoro_timer_bot.")
     )
+
+
+def received_information(update, context):
+    try:
+        text = update.message.text
+        chat_data = context.chat_data
+        category = chat_data["choice"]
+        chat_settings = chat_data['settings']
+
+        chat_settings[category] = int(text)
+
+        del chat_data["choice"]
+
+        text = f"You entered {text} for {category.lower()}"
+        text += get_settings_message(context)
+        update.message.reply_text(text, reply_markup=settings_keyboard())
+
+        return CHOOSING
+
+    except ValueError:
+        send_message(update, "The answer should be a number!")
 
 
 def repeat(update, context):
@@ -40,13 +80,14 @@ def repeat(update, context):
 
 def report(context):
     job = context.job.context
+    chat_data = job['context'].chat_data
+    chat_data = check_sprint_settings(chat_data)
+    sprint_settings = chat_data['settings']
 
     if job['rest'] or not job['sprint']:
-        update_stats(job['context'].chat_data, job['due'])
+        update_stats(chat_data, job['due'])
 
-    chat_data = get_sprint_settings(job['context'].chat_data)
-    s = chat_data['settings']
-    if job['sprint'] and job['pomodoros'] < s[POMODOROS]:
+    if job['sprint'] and job['pomodoros'] < sprint_settings[POMODOROS]:
         set_timer(
             job['update'],
             job['context'],
@@ -79,9 +120,12 @@ def set_timer(update, context, sprint=False, rest=False, pomodoros=0):
     chat_id = update.effective_message.chat_id
 
     if sprint:
-        chat_data = get_sprint_settings(context.chat_data)
-        s = chat_data['settings']
-        due = s[POMODORO_DURATION] if not rest else s[REST_DURATION]
+        chat_data = check_sprint_settings(context.chat_data)
+        sprint_settings = chat_data['settings']
+        if not rest:
+            due = sprint_settings[POMODORO_DURATION]
+        else:
+            due = sprint_settings[REST_DURATION]
     else:
         due = int(update.message['text'][1:].replace('@pomodor0bot', ''))
 
@@ -100,9 +144,7 @@ def set_timer(update, context, sprint=False, rest=False, pomodoros=0):
     if pomodoros == 0:
         context.chat_data['repeat'] = data
 
-    context.job_queue.run_once(
-        report, due, name=str(chat_id), context=data
-    )
+    context.job_queue.run_once(report, due, name=str(chat_id), context=data)
 
     text = get_message(context, rest, pomodoros, sprint, job_removed, due)
     send_message(update, text)
@@ -110,12 +152,7 @@ def set_timer(update, context, sprint=False, rest=False, pomodoros=0):
 
 def settings_start(update, context):
     text = get_settings_message(context)
-
-    update.message.reply_text(
-        text, 
-        reply_markup=settings_keyboard()
-    )
-
+    update.message.reply_text(text, reply_markup=settings_keyboard())
     return CHOOSING
 
 
@@ -131,52 +168,3 @@ def unset_timer(update, context):
     else:
         text = "You have no active pomodoros."
     send_message(update, text)
-
-
-def get_settings_message(context):
-    chat_settings = get_sprint_settings(context.chat_data)['settings']
-
-    return (f"Your current settings are: \n\n"
-            f"{POMODORO_DURATION}: {chat_settings[POMODORO_DURATION]}\n"
-            f"{REST_DURATION}: {chat_settings[REST_DURATION]}\n"
-            f"{POMODOROS}: {chat_settings[POMODOROS]}\n\n"
-            f"What do you want to change?")
-    
-
-def regular_choice(update, context):
-    text = update.message.text
-    context.chat_data["choice"] = text
-    update.message.reply_text(
-        f"Please enter {text.lower()}:"
-    )
-    return TYPING_REPLY
-
-
-def done(update, context):
-    chat_data = context.chat_data
-    if "choice" in chat_data:
-        del chat_data["choice"]
-
-    send_message(update, "Settings saved!")
-
-    return ConversationHandler.END
-
-
-def received_information(update, context):
-    chat_data = context.chat_data
-    text = update.message.text
-    category = chat_data["choice"]
-    chat_data[category] = text
-
-    chat_settings = context.chat_data['settings']
-    chat_settings[category] = int(text)
-
-    del chat_data["choice"]
-
-    text = f"You entered {text} for {category.lower()}" 
-    text += get_settings_message(context)
-
-    update.message.reply_text(text, reply_markup=settings_keyboard())
-    
-    return CHOOSING
-

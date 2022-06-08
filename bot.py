@@ -7,7 +7,7 @@ from handlers import help
 from handlers import received_information
 from handlers import repeat
 from handlers import report_stats
-from handlers import regular_choice
+from handlers import choice
 from handlers import set_timer
 from handlers import settings_start
 from handlers import start_sprint
@@ -55,13 +55,12 @@ def main():
                             f"{constants.REST_DURATION}|"
                             f"{constants.POMODOROS})$"
                         )),
-                        regular_choice
+                        choice
                     )
                 ],
                 constants.TYPING_REPLY: [
                     MessageHandler(
-                        # А что если введут не цифру
-                        Filters.text & ~(Filters.command | 
+                        Filters.text & ~(Filters.command |
                                          Filters.regex("^Done$")),
                         received_information,
                     )
@@ -70,7 +69,7 @@ def main():
             fallbacks=[MessageHandler(Filters.regex("^Done$"), done)],
         )
     )
-    
+
     updater.start_polling()
     updater.idle()
 

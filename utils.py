@@ -16,7 +16,7 @@ def get_message(context, rest, pomodoros, sprint, job_removed, due):
     if not rest:
         text = ""
         if sprint and pomodoros == 0:
-            chat_data = get_sprint_settings(context.chat_data)
+            chat_data = check_sprint_settings(context.chat_data)
             s = chat_data['settings']
             d = s[POMODORO_DURATION]
             p = s[POMODOROS]
@@ -34,6 +34,16 @@ def get_message(context, rest, pomodoros, sprint, job_removed, due):
         text += " Previous timer was removed."
 
     return text
+
+
+def get_settings_message(context):
+    chat_settings = check_sprint_settings(context.chat_data)['settings']
+
+    return (f"Your current settings are: \n\n"
+            f"{POMODORO_DURATION}: {chat_settings[POMODORO_DURATION]}\n"
+            f"{REST_DURATION}: {chat_settings[REST_DURATION]}\n"
+            f"{POMODOROS}: {chat_settings[POMODOROS]}\n\n"
+            f"What do you want to change?")
 
 
 def keyboard():
@@ -58,8 +68,8 @@ def settings_keyboard():
         [[POMODORO_DURATION],
          [REST_DURATION],
          [POMODOROS],
-         ["Done"]], 
-        one_time_keyboard=True, 
+         ["Done"]],
+        one_time_keyboard=True,
         resize_keyboard=True
     )
 
@@ -86,7 +96,7 @@ def update_stats(chat_data, minutes):
     chat_data['stats']['minutes'] += minutes
 
 
-def get_sprint_settings(chat_data):
+def check_sprint_settings(chat_data):
     if 'settings' not in chat_data:
         chat_data['settings'] = {
             POMODORO_DURATION: 30,
