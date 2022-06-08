@@ -2,12 +2,22 @@ from telegram import ReplyKeyboardMarkup
 from datetime import date
 
 
-def get_message(rest, pomodoros, sprint, job_removed, due):
+POMODORO_DURATION, REST_DURATION, POMODOROS = (
+    "Pomodoro duration", "Rest duration", "Number of pomodoros in a sprint")
+
+
+def get_message(context, rest, pomodoros, sprint, job_removed, due):
     if not rest:
         text = ""
         if sprint and pomodoros == 0:
-            text = (f"Sprint started. It will last for 2 hours and 30 minutes"
-                    f" or until you stop it. ")
+            chat_data = get_sprint_settings(context.chat_data)
+            s = chat_data['settings']
+            total_minutes = s[POMODORO_DURATION]*s[POMODOROS]
+            total_minutes += s[REST_DURATION]*(s[POMODOROS] - 1)
+            hours = total_minutes // 60
+            minutes = total_minutes % 60
+            text = (f"Sprint started. It will last for {hours} hours and "
+                    f"{minutes} minutes or until you stop it. ")
         text += f"Pomodoro {due} minutes started."
     else:
         text = (f"Pomodoro is done, please have {due} minutes rest now..")
@@ -53,3 +63,13 @@ def update_stats(chat_data, minutes):
 
     chat_data['stats']['pomodoros'] += 1
     chat_data['stats']['minutes'] += minutes
+
+
+def get_sprint_settings(chat_data):
+    if 'settings' not in chat_data:
+        chat_data['settings'] = {
+            POMODORO_DURATION: 30,
+            REST_DURATION: 10,
+            POMODOROS: 4
+        }
+    return chat_data

@@ -2,7 +2,10 @@ from utils import get_message
 from utils import remove_job_if_exists
 from utils import update_stats
 from utils import send_message
+from utils import get_sprint_settings
 
+POMODORO_DURATION, REST_DURATION, POMODOROS = (
+    "Pomodoro duration", "Rest duration", "Number of pomodoros in a sprint")
 
 def help(update, context):
     send_message(
@@ -31,7 +34,9 @@ def report(context):
     if job['rest'] or not job['sprint']:
         update_stats(job['context'].chat_data, job['due'])
 
-    if job['sprint'] and job['pomodoros'] < 4:
+    chat_data = get_sprint_settings(job['context'].chat_data)
+    s = chat_data['settings']
+    if job['sprint'] and job['pomodoros'] < s[POMODOROS]:
         set_timer(
             job['update'],
             job['context'],
@@ -64,7 +69,9 @@ def set_timer(update, context, sprint=False, rest=False, pomodoros=0):
     chat_id = update.effective_message.chat_id
 
     if sprint:
-        due = 30 if not rest else 10
+        chat_data = get_sprint_settings(context.chat_data)
+        s = chat_data['settings']
+        due = s[POMODORO_DURATION] if not rest else s[REST_DURATION]
     else:
         due = int(update.message['text'][1:].replace('@pomodor0bot', ''))
 
@@ -87,7 +94,7 @@ def set_timer(update, context, sprint=False, rest=False, pomodoros=0):
         report, due, name=str(chat_id), context=data
     )
 
-    text = get_message(rest, pomodoros, sprint, job_removed, due)
+    text = get_message(context, rest, pomodoros, sprint, job_removed, due)
     send_message(update, text)
 
 
