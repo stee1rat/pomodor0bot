@@ -1,4 +1,5 @@
 from telegram import ReplyKeyboardMarkup
+from datetime import date
 
 
 def get_message(rest, pomodoros, sprint, job_removed, due):
@@ -42,10 +43,13 @@ def remove_job_if_exists(name, context):
 
 
 def update_stats(chat_data, minutes):
-    if 'stats' not in chat_data:
+    if ('stats' not in chat_data or
+            chat_data['stats']['date'] < date.today()):
         chat_data['stats'] = {
             'pomodoros': 0,
-            'minutes': 0
+            'minutes': 0,
+            'date': date.today()
         }
+
     chat_data['stats']['pomodoros'] += 1
     chat_data['stats']['minutes'] += minutes

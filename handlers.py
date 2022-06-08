@@ -84,7 +84,7 @@ def set_timer(update, context, sprint=False, rest=False, pomodoros=0):
         context.chat_data['repeat'] = data
 
     context.job_queue.run_once(
-        report, due * 60, name=str(chat_id), context=data
+        report, due, name=str(chat_id), context=data
     )
 
     text = get_message(rest, pomodoros, sprint, job_removed, due)
